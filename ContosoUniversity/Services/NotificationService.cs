@@ -5,6 +5,11 @@ using Newtonsoft.Json;
 
 namespace ContosoUniversity.Services
 {
+    /// <summary>
+    /// Provides notification services using MSMQ for student enrollment notifications.
+    /// Note: MSMQ is only available on Windows platforms. On non-Windows platforms,
+    /// this service logs notifications but does not send them to a queue.
+    /// </summary>
     public class NotificationService : IDisposable
     {
         private readonly string _queuePath;

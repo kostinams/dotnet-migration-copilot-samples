@@ -21,8 +21,11 @@ if (!string.IsNullOrEmpty(builder.Configuration["ApplicationInsights:Instrumenta
     builder.Services.AddApplicationInsightsTelemetry();
 }
 
-// Add runtime compilation for development
-builder.Services.AddRazorPages().AddRazorRuntimeCompilation();
+// Add runtime compilation for development only
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddRazorPages().AddRazorRuntimeCompilation();
+}
 
 // Configure Kestrel limits
 builder.Services.Configure<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions>(options =>
