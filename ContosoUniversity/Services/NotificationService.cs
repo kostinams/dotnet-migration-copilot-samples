@@ -1,34 +1,54 @@
-using System;
-using System.Messaging;
-using System.Configuration;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using ContosoUniversity.Models;
 using Newtonsoft.Json;
 
 namespace ContosoUniversity.Services
 {
-    public class NotificationService
+    public class NotificationService : IDisposable
     {
         private readonly string _queuePath;
-        private readonly MessageQueue _queue;
+        private readonly ILogger<NotificationService> _logger;
+        private readonly bool _messagingAvailable;
 
-        public NotificationService()
+#if WINDOWS
+        private System.Messaging.MessageQueue _queue;
+#endif
+
+        public NotificationService(IConfiguration configuration, ILogger<NotificationService> logger)
         {
+            _logger = logger;
+            
             // Get queue path from configuration or use default
-            _queuePath = ConfigurationManager.AppSettings["NotificationQueuePath"] ?? @".\Private$\ContosoUniversityNotifications";
+            _queuePath = configuration["NotificationSettings:QueuePath"] ?? @".\Private$\ContosoUniversityNotifications";
             
-            // Ensure the queue exists
-            if (!MessageQueue.Exists(_queuePath))
+            _messagingAvailable = false;
+
+#if WINDOWS
+            try
             {
-                _queue = MessageQueue.Create(_queuePath);
-                _queue.SetPermissions("Everyone", MessageQueueAccessRights.FullControl);
+                // Ensure the queue exists
+                if (!System.Messaging.MessageQueue.Exists(_queuePath))
+                {
+                    _queue = System.Messaging.MessageQueue.Create(_queuePath);
+                    _queue.SetPermissions("Everyone", System.Messaging.MessageQueueAccessRights.FullControl);
+                }
+                else
+                {
+                    _queue = new System.Messaging.MessageQueue(_queuePath);
+                }
+                
+                // Configure queue formatter
+                _queue.Formatter = new System.Messaging.XmlMessageFormatter(new Type[] { typeof(string) });
+                _messagingAvailable = true;
             }
-            else
+            catch (Exception ex)
             {
-                _queue = new MessageQueue(_queuePath);
+                _logger.LogWarning(ex, "Failed to initialize MSMQ notification queue. Notification functionality may not work. Error: {Message}", ex.Message);
             }
-            
-            // Configure queue formatter
-            _queue.Formatter = new XmlMessageFormatter(new Type[] { typeof(string) });
+#else
+            _logger.LogInformation("MSMQ messaging is not available on this platform. Notifications will be logged only.");
+#endif
         }
 
         public void SendNotification(string entityType, string entityId, EntityOperation operation, string userName = null)
@@ -38,6 +58,17 @@ namespace ContosoUniversity.Services
 
         public void SendNotification(string entityType, string entityId, string entityDisplayName, EntityOperation operation, string userName = null)
         {
+            var message = GenerateMessage(entityType, entityId, entityDisplayName, operation);
+            
+            // Always log the notification
+            _logger.LogInformation("Notification: {Message} by {User}", message, userName ?? "System");
+
+#if WINDOWS
+            if (!_messagingAvailable || _queue == null)
+            {
+                return;
+            }
+
             try
             {
                 var notification = new Notification
@@ -45,46 +76,56 @@ namespace ContosoUniversity.Services
                     EntityType = entityType,
                     EntityId = entityId,
                     Operation = operation.ToString(),
-                    Message = GenerateMessage(entityType, entityId, entityDisplayName, operation),
+                    Message = message,
                     CreatedAt = DateTime.Now,
                     CreatedBy = userName ?? "System",
                     IsRead = false
                 };
 
                 var jsonMessage = JsonConvert.SerializeObject(notification);
-                var message = new Message(jsonMessage)
+                var queueMessage = new System.Messaging.Message(jsonMessage)
                 {
                     Label = $"{entityType} {operation}",
-                    Priority = MessagePriority.Normal
+                    Priority = System.Messaging.MessagePriority.Normal
                 };
 
-                _queue.Send(message);
+                _queue.Send(queueMessage);
             }
             catch (Exception ex)
             {
                 // Log error but don't break the main operation
-                System.Diagnostics.Debug.WriteLine($"Failed to send notification: {ex.Message}");
+                _logger.LogError(ex, "Failed to send notification to queue: {Message}", ex.Message);
             }
+#endif
         }
 
         public Notification ReceiveNotification()
         {
+#if WINDOWS
+            if (!_messagingAvailable || _queue == null)
+            {
+                return null;
+            }
+
             try
             {
                 var message = _queue.Receive(TimeSpan.FromSeconds(1));
                 var jsonContent = message.Body.ToString();
                 return JsonConvert.DeserializeObject<Notification>(jsonContent);
             }
-            catch (MessageQueueException ex) when (ex.MessageQueueErrorCode == MessageQueueErrorCode.IOTimeout)
+            catch (System.Messaging.MessageQueueException ex) when (ex.MessageQueueErrorCode == System.Messaging.MessageQueueErrorCode.IOTimeout)
             {
                 // No messages available
                 return null;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to receive notification: {ex.Message}");
+                _logger.LogError(ex, "Failed to receive notification: {Message}", ex.Message);
                 return null;
             }
+#else
+            return null;
+#endif
         }
 
         public void MarkAsRead(int notificationId)
@@ -114,7 +155,9 @@ namespace ContosoUniversity.Services
 
         public void Dispose()
         {
+#if WINDOWS
             _queue?.Dispose();
+#endif
         }
     }
 }
