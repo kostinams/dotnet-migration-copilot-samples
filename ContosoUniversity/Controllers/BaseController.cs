@@ -1,5 +1,4 @@
-using System;
-using System.Web.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using ContosoUniversity.Services;
 using ContosoUniversity.Models;
 using ContosoUniversity.Data;
@@ -8,12 +7,15 @@ namespace ContosoUniversity.Controllers
 {
     public abstract class BaseController : Controller
     {
-        protected SchoolContext db;
-        protected NotificationService notificationService = new NotificationService();
+        protected readonly SchoolContext db;
+        protected readonly NotificationService notificationService;
+        protected readonly ILogger<BaseController> logger;
 
-        public BaseController()
+        public BaseController(SchoolContext context, NotificationService notificationSvc, ILogger<BaseController> logger)
         {
-            db = SchoolContextFactory.Create();
+            db = context;
+            notificationService = notificationSvc;
+            this.logger = logger;
         }
 
         protected void SendEntityNotification(string entityType, string entityId, EntityOperation operation)
@@ -31,18 +33,8 @@ namespace ContosoUniversity.Controllers
             catch (Exception ex)
             {
                 // Log the error but don't break the main operation
-                System.Diagnostics.Debug.WriteLine($"Failed to send notification: {ex.Message}");
+                logger.LogError(ex, "Failed to send notification: {Message}", ex.Message);
             }
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                db?.Dispose();
-                notificationService?.Dispose();
-            }
-            base.Dispose(disposing);
         }
     }
 }
