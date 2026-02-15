@@ -9,10 +9,10 @@ namespace ContosoUniversity.Services
     {
         private readonly string _queuePath;
         private readonly ILogger<NotificationService> _logger;
-        private readonly bool _messagingAvailable;
 
 #if WINDOWS
         private System.Messaging.MessageQueue _queue;
+        private readonly bool _messagingAvailable;
 #endif
 
         public NotificationService(IConfiguration configuration, ILogger<NotificationService> logger)
@@ -21,10 +21,10 @@ namespace ContosoUniversity.Services
             
             // Get queue path from configuration or use default
             _queuePath = configuration["NotificationSettings:QueuePath"] ?? @".\Private$\ContosoUniversityNotifications";
-            
-            _messagingAvailable = false;
 
 #if WINDOWS
+            _messagingAvailable = false;
+            
             try
             {
                 // Ensure the queue exists

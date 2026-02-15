@@ -14,8 +14,21 @@ builder.Services.AddDbContext<SchoolContext>(options =>
 // Add services
 builder.Services.AddScoped<NotificationService>();
 
+// Add Application Insights telemetry (if configured)
+if (!string.IsNullOrEmpty(builder.Configuration["ApplicationInsights:InstrumentationKey"]) ||
+    !string.IsNullOrEmpty(builder.Configuration["ApplicationInsights:ConnectionString"]))
+{
+    builder.Services.AddApplicationInsightsTelemetry();
+}
+
 // Add runtime compilation for development
 builder.Services.AddRazorPages().AddRazorRuntimeCompilation();
+
+// Configure Kestrel limits
+builder.Services.Configure<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions>(options =>
+{
+    options.Limits.MaxRequestBodySize = builder.Configuration.GetValue<long>("Kestrel:Limits:MaxRequestBodySize", 10485760);
+});
 
 var app = builder.Build();
 
