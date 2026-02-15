@@ -203,6 +203,26 @@
       <HintPath>packages\Microsoft.Identity.Client.4.21.1\lib\net461\Microsoft.Identity.Client.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Azure.Core">
+      <HintPath>packages\Azure.Core.1.45.0\lib\net461\Azure.Core.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Azure.Storage.Blobs">
+      <HintPath>packages\Azure.Storage.Blobs.12.27.0\lib\net461\Azure.Storage.Blobs.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Azure.Storage.Common">
+      <HintPath>packages\Azure.Storage.Common.12.22.0\lib\net461\Azure.Storage.Common.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.ClientModel">
+      <HintPath>packages\System.ClientModel.1.1.0\lib\netstandard2.0\System.ClientModel.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Text.Json">
+      <HintPath>packages\System.Text.Json.8.0.5\lib\net462\System.Text.Json.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CodeDom.Providers.DotNetCompilerPlatform">
