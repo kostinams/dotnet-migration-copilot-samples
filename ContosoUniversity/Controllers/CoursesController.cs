@@ -7,11 +7,20 @@ using System.IO;
 using System.Web;
 using ContosoUniversity.Data;
 using ContosoUniversity.Models;
+using ContosoUniversity.Services;
+using Microsoft.Extensions.Logging;
 
 namespace ContosoUniversity.Controllers
 {
     public class CoursesController : BaseController
     {
+        private readonly ILogger<CoursesController> _logger;
+
+        public CoursesController()
+        {
+            _logger = LoggingService.CreateLogger<CoursesController>();
+        }
+
         // GET: Courses
         public ActionResult Index()
         {
@@ -236,8 +245,7 @@ namespace ContosoUniversity.Controllers
                     catch (Exception ex)
                     {
                         // Log the error but don't prevent deletion of the course
-                        // In a production application, you would log this error properly
-                        System.Diagnostics.Debug.WriteLine($"Error deleting file: {ex.Message}");
+                        _logger.LogWarning(ex, "Error deleting file: {FilePath}", filePath);
                     }
                 }
             }

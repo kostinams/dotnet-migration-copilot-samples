@@ -3,11 +3,19 @@ using System.Collections.Generic;
 using System.Web.Mvc;
 using ContosoUniversity.Services;
 using ContosoUniversity.Models;
+using Microsoft.Extensions.Logging;
 
 namespace ContosoUniversity.Controllers
 {
     public class NotificationsController : BaseController
     {
+        private readonly ILogger<NotificationsController> _logger;
+
+        public NotificationsController()
+        {
+            _logger = LoggingService.CreateLogger<NotificationsController>();
+        }
+
         // GET: api/notifications - Get pending notifications for admin
         [HttpGet]
         public JsonResult GetNotifications()
@@ -29,7 +37,7 @@ namespace ContosoUniversity.Controllers
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error retrieving notifications: {ex.Message}");
+                _logger.LogError(ex, "Error retrieving notifications");
                 return Json(new { success = false, message = "Error retrieving notifications" }, JsonRequestBehavior.AllowGet);
             }
 
@@ -51,7 +59,7 @@ namespace ContosoUniversity.Controllers
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error marking notification as read: {ex.Message}");
+                _logger.LogError(ex, "Error marking notification as read. Notification ID: {NotificationId}", id);
                 return Json(new { success = false, message = "Error updating notification" });
             }
         }

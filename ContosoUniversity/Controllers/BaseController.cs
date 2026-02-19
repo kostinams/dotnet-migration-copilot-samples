@@ -3,6 +3,7 @@ using System.Web.Mvc;
 using ContosoUniversity.Services;
 using ContosoUniversity.Models;
 using ContosoUniversity.Data;
+using Microsoft.Extensions.Logging;
 
 namespace ContosoUniversity.Controllers
 {
@@ -10,10 +11,12 @@ namespace ContosoUniversity.Controllers
     {
         protected SchoolContext db;
         protected NotificationService notificationService = new NotificationService();
+        protected readonly ILogger _logger;
 
         public BaseController()
         {
             db = SchoolContextFactory.Create();
+            _logger = LoggingService.CreateLogger(this.GetType().Name);
         }
 
         protected void SendEntityNotification(string entityType, string entityId, EntityOperation operation)
@@ -31,7 +34,7 @@ namespace ContosoUniversity.Controllers
             catch (Exception ex)
             {
                 // Log the error but don't break the main operation
-                System.Diagnostics.Debug.WriteLine($"Failed to send notification: {ex.Message}");
+                _logger.LogWarning(ex, "Failed to send notification for {EntityType} {EntityId}", entityType, entityId);
             }
         }
 
