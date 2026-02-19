@@ -11,12 +11,10 @@ namespace ContosoUniversity.Controllers
     {
         protected SchoolContext db;
         protected NotificationService notificationService = new NotificationService();
-        protected readonly ILogger _logger;
 
         public BaseController()
         {
             db = SchoolContextFactory.Create();
-            _logger = LoggingService.CreateLogger(this.GetType().Name);
         }
 
         protected void SendEntityNotification(string entityType, string entityId, EntityOperation operation)
@@ -34,7 +32,9 @@ namespace ContosoUniversity.Controllers
             catch (Exception ex)
             {
                 // Log the error but don't break the main operation
-                _logger.LogWarning(ex, "Failed to send notification for {EntityType} {EntityId}", entityType, entityId);
+                // Create a temporary logger for this operation
+                var logger = LoggingService.CreateLogger("BaseController");
+                logger.LogWarning(ex, "Failed to send notification for {EntityType} {EntityId}", entityType, entityId);
             }
         }
 

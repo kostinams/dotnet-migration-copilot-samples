@@ -26,6 +26,12 @@ namespace ContosoUniversity
             InitializeDatabase();
         }
 
+        protected void Application_End()
+        {
+            // Clean up logging resources
+            LoggingService.Shutdown();
+        }
+
         private void InitializeDatabase()
         {
             var connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString;

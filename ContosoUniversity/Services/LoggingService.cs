@@ -10,13 +10,14 @@ namespace ContosoUniversity.Services
     public class LoggingService
     {
         private static ILoggerFactory _loggerFactory;
+        private static bool _isShuttingDown = false;
         private static readonly object _lock = new object();
 
         public static void Initialize()
         {
             lock (_lock)
             {
-                if (_loggerFactory == null)
+                if (_loggerFactory == null && !_isShuttingDown)
                 {
                     _loggerFactory = LoggerFactory.Create(builder =>
                     {
@@ -40,22 +41,53 @@ namespace ContosoUniversity.Services
             }
         }
 
+        public static void Shutdown()
+        {
+            lock (_lock)
+            {
+                _isShuttingDown = true;
+                if (_loggerFactory != null)
+                {
+                    _loggerFactory.Dispose();
+                    _loggerFactory = null;
+                }
+            }
+        }
+
         public static ILogger<T> CreateLogger<T>()
         {
-            if (_loggerFactory == null)
+            lock (_lock)
             {
-                Initialize();
+                if (_isShuttingDown)
+                {
+                    throw new InvalidOperationException("Cannot create logger after shutdown");
+                }
+                
+                if (_loggerFactory == null)
+                {
+                    Initialize();
+                }
+                
+                return _loggerFactory.CreateLogger<T>();
             }
-            return _loggerFactory.CreateLogger<T>();
         }
 
         public static ILogger CreateLogger(string categoryName)
         {
-            if (_loggerFactory == null)
+            lock (_lock)
             {
-                Initialize();
+                if (_isShuttingDown)
+                {
+                    throw new InvalidOperationException("Cannot create logger after shutdown");
+                }
+                
+                if (_loggerFactory == null)
+                {
+                    Initialize();
+                }
+                
+                return _loggerFactory.CreateLogger(categoryName);
             }
-            return _loggerFactory.CreateLogger(categoryName);
         }
     }
 }
