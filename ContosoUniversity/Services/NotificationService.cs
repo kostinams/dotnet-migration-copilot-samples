@@ -3,6 +3,7 @@ using System.Messaging;
 using System.Configuration;
 using ContosoUniversity.Models;
 using Newtonsoft.Json;
+using Microsoft.Extensions.Logging;
 
 namespace ContosoUniversity.Services
 {
@@ -10,9 +11,12 @@ namespace ContosoUniversity.Services
     {
         private readonly string _queuePath;
         private readonly MessageQueue _queue;
+        private readonly ILogger<NotificationService> _logger;
 
         public NotificationService()
         {
+            _logger = LoggingService.CreateLogger<NotificationService>();
+            
             // Get queue path from configuration or use default
             _queuePath = ConfigurationManager.AppSettings["NotificationQueuePath"] ?? @".\Private$\ContosoUniversityNotifications";
             
@@ -63,7 +67,8 @@ namespace ContosoUniversity.Services
             catch (Exception ex)
             {
                 // Log error but don't break the main operation
-                System.Diagnostics.Debug.WriteLine($"Failed to send notification: {ex.Message}");
+                _logger.LogWarning(ex, "Failed to send notification for {EntityType} {EntityId}", 
+                    notification.EntityType, notification.EntityId);
             }
         }
 
@@ -82,7 +87,7 @@ namespace ContosoUniversity.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to receive notification: {ex.Message}");
+                _logger.LogWarning(ex, "Failed to receive notification from queue");
                 return null;
             }
         }

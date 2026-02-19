@@ -3,6 +3,7 @@ using System.Web.Mvc;
 using ContosoUniversity.Services;
 using ContosoUniversity.Models;
 using ContosoUniversity.Data;
+using Microsoft.Extensions.Logging;
 
 namespace ContosoUniversity.Controllers
 {
@@ -31,7 +32,9 @@ namespace ContosoUniversity.Controllers
             catch (Exception ex)
             {
                 // Log the error but don't break the main operation
-                System.Diagnostics.Debug.WriteLine($"Failed to send notification: {ex.Message}");
+                // Create a temporary logger for this operation
+                var logger = LoggingService.CreateLogger("BaseController");
+                logger.LogWarning(ex, "Failed to send notification for {EntityType} {EntityId}", entityType, entityId);
             }
         }
 

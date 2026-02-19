@@ -5,6 +5,7 @@ using System.Web.Optimization;
 using System.Web.Routing;
 using Microsoft.EntityFrameworkCore;
 using ContosoUniversity.Data;
+using ContosoUniversity.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ContosoUniversity
@@ -13,6 +14,9 @@ namespace ContosoUniversity
     {
         protected void Application_Start()
         {
+            // Initialize logging service first
+            LoggingService.Initialize();
+            
             AreaRegistration.RegisterAllAreas();
             FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
             RouteConfig.RegisterRoutes(RouteTable.Routes);
@@ -20,6 +24,12 @@ namespace ContosoUniversity
             
             // Initialize database with EF Core
             InitializeDatabase();
+        }
+
+        protected void Application_End()
+        {
+            // Clean up logging resources
+            LoggingService.Shutdown();
         }
 
         private void InitializeDatabase()
